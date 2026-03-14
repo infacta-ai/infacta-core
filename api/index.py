@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request
 
 app = Flask(__name__)
 
@@ -113,50 +113,51 @@ def analyze_text(text: str):
     }
 
 
-HTML_PAGE = """
+def render_page(result_html="", text_value="New drone system destroyed 20 tanks yesterday."):
+    return f"""
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Infacta</title>
+    <title>Інфакта</title>
     <style>
-        body {
+        body {{
             font-family: Arial, sans-serif;
             background: #f5f7fb;
             color: #1f2937;
             margin: 0;
             padding: 40px 20px;
-        }
-        .container {
+        }}
+        .container {{
             max-width: 950px;
             margin: 0 auto;
-        }
-        h1 {
+        }}
+        h1 {{
             margin-bottom: 6px;
             font-size: 42px;
-        }
-        .subtitle {
+        }}
+        .subtitle {{
             color: #6b7280;
             margin-bottom: 24px;
-        }
-        .card {
+        }}
+        .card {{
             background: white;
             border: 1px solid #e5e7eb;
             border-radius: 16px;
             padding: 20px;
             margin-bottom: 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-        }
-        .visible-box {
+        }}
+        .visible-box {{
             background: #f9fafb;
             border: 1px solid #e5e7eb;
             border-radius: 12px;
             padding: 16px;
             margin-bottom: 20px;
             color: #374151;
-        }
-        textarea {
+        }}
+        textarea {{
             width: 100%;
             min-height: 180px;
             border-radius: 12px;
@@ -165,8 +166,8 @@ HTML_PAGE = """
             font-size: 16px;
             box-sizing: border-box;
             resize: vertical;
-        }
-        button {
+        }}
+        button {{
             margin-top: 14px;
             background: #2563eb;
             color: white;
@@ -175,132 +176,59 @@ HTML_PAGE = """
             padding: 12px 20px;
             font-size: 16px;
             cursor: pointer;
-        }
-        button:hover {
+        }}
+        button:hover {{
             background: #1d4ed8;
-        }
-        .grid {
-            display: grid;
-            gap: 16px;
-        }
-        .badge {
+        }}
+        .badge {{
             display: inline-block;
             padding: 6px 12px;
             border-radius: 999px;
             color: white;
             font-weight: bold;
             font-size: 14px;
-        }
-        .high { background: #16a34a; }
-        .medium { background: #d97706; }
-        .low { background: #dc2626; }
-        ul {
+        }}
+        .high {{ background: #16a34a; }}
+        .medium {{ background: #d97706; }}
+        .low {{ background: #dc2626; }}
+        ul {{
             margin: 8px 0 0 20px;
-        }
-        .muted {
-            color: #6b7280;
-        }
-        .mono {
-            font-family: Consolas, monospace;
-        }
-        .result-box {
-            margin-top: 20px;
-        }
-        .small-title {
+        }}
+        .line {{
+            margin-bottom: 8px;
+        }}
+        .small-title {{
             margin-bottom: 10px;
             font-size: 20px;
-        }
-        .line {
-            margin-bottom: 8px;
-        }
+        }}
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Infacta</h1>
-        <div class="subtitle">Information Analysis Platform</div>
+        <h1>Інфакта</h1>
+        <div class="subtitle">Верифікація інформації на основі структури</div>
 
         <div class="visible-box">
-            <strong>Visible analysis:</strong><br>
-            1. Checking structure<br>
-            2. Detecting numbers and time references<br>
-            3. Estimating coverage<br>
-            4. Building Map of Unknowns<br>
-            5. Estimating reliability and maturity
+            <strong>Видимий аналіз:</strong><br>
+            1. Перевірка структури<br>
+            2. Виявлення чисел і часових маркерів<br>
+            3. Оцінка покриття структури<br>
+            4. Побудова карти невідомого<br>
+            5. Оцінка достовірності та зрілості аналізу
         </div>
 
         <div class="card">
-            <div class="small-title">Check Information</div>
-            <div class="muted">Paste a short claim, paragraph, or news fragment.</div>
+            <div class="small-title">Перевірити інформацію</div>
 
-            <textarea id="inputText">New drone system destroyed 20 tanks yesterday.</textarea>
-            <br>
-            <button onclick="runAnalysis()">Analyze</button>
-
-            <div id="result" class="result-box"></div>
+            <form method="POST" action="/analyze">
+                <textarea name="text">{text_value}</textarea>
+                <br>
+                <button type="submit">Аналізуй</button>
+            </form>
         </div>
+
+        {result_html}
     </div>
-
-    <script>
-        async function runAnalysis() {
-            const text = document.getElementById("inputText").value;
-
-            const response = await fetch("/analyze", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ text })
-            });
-
-            const data = await response.json();
-
-            const reliabilityClass =
-                data.reliability === "HIGH" ? "high" :
-                data.reliability === "MEDIUM" ? "medium" : "low";
-
-            document.getElementById("result").innerHTML = `
-                <div class="card">
-                    <div class="small-title">Analysis Result</div>
-                    <div class="line"><strong>Reliability:</strong> <span class="badge ${reliabilityClass}">${data.reliability}</span></div>
-                    <div class="line"><strong>Analysis Maturity:</strong> ${data.maturity}</div>
-                    <div class="line"><strong>Structure Coverage:</strong> ${data.coverage}%</div>
-                    <div class="line"><strong>Text length:</strong> ${data.text_length}</div>
-                </div>
-
-                <div class="card">
-                    <div class="small-title">Detected Elements</div>
-                    <div class="line"><strong>Numbers:</strong> ${data.numbers.length ? data.numbers.join(", ") : "None"}</div>
-                    <div class="line"><strong>Time references:</strong> ${data.time_words.length ? data.time_words.join(", ") : "None"}</div>
-                    <div class="line"><strong>Action verbs:</strong> ${data.action_verbs.length ? data.action_verbs.join(", ") : "None"}</div>
-                </div>
-
-                <div class="card">
-                    <div class="small-title">Structure Check</div>
-                    <ul>
-                        <li>Source: ${data.structure.source}</li>
-                        <li>Date: ${data.structure.date}</li>
-                        <li>Context: ${data.structure.context}</li>
-                        <li>Evidence: ${data.structure.evidence}</li>
-                        <li>Claim: ${data.structure.claim}</li>
-                    </ul>
-                </div>
-
-                <div class="card">
-                    <div class="small-title">Map of Unknowns</div>
-                    <div class="line"><strong>Missing:</strong> ${data.missing.length ? data.missing.join(", ") : "None"}</div>
-                    <div class="line"><strong>Critical Unknowns:</strong> ${data.critical_unknowns.length ? data.critical_unknowns.join(", ") : "None"}</div>
-                </div>
-
-                <div class="card">
-                    <div class="small-title">Reasons</div>
-                    <ul>
-                        ${data.reasons.length ? data.reasons.map(item => `<li>${item}</li>`).join("") : "<li>No major gaps detected</li>"}
-                    </ul>
-                </div>
-            `;
-        }
-    </script>
 </body>
 </html>
 """
@@ -308,19 +236,74 @@ HTML_PAGE = """
 
 @app.route("/", methods=["GET"])
 def home():
-    return HTML_PAGE
+    return render_page()
 
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
-    data = request.get_json(silent=True) or {}
-    text = data.get("text", "").strip()
+    text = request.form.get("text", "").strip()
 
     if not text:
-        return jsonify({"error": "No text provided"}), 400
+        return render_page(
+            result_html="""
+            <div class="card">
+                <div class="small-title">Помилка</div>
+                <div class="line"><strong>Текст не передано.</strong></div>
+            </div>
+            """,
+            text_value=""
+        )
 
-    result = analyze_text(text)
-    return jsonify(result)
+    data = analyze_text(text)
+
+    reliability_class = "low"
+    if data["reliability"] == "HIGH":
+        reliability_class = "high"
+    elif data["reliability"] == "MEDIUM":
+        reliability_class = "medium"
+
+    result_html = f"""
+    <div class="card">
+        <div class="small-title">Результат аналізу</div>
+        <div class="line"><strong>Достовірність:</strong> <span class="badge {reliability_class}">{data["reliability"]}</span></div>
+        <div class="line"><strong>Рівень зрілості аналізу:</strong> {data["maturity"]}</div>
+        <div class="line"><strong>Покриття структури:</strong> {data["coverage"]}%</div>
+        <div class="line"><strong>Довжина тексту:</strong> {data["text_length"]}</div>
+    </div>
+
+    <div class="card">
+        <div class="small-title">Виявлені елементи</div>
+        <div class="line"><strong>Числа:</strong> {", ".join(data["numbers"]) if data["numbers"] else "Немає"}</div>
+        <div class="line"><strong>Часові маркери:</strong> {", ".join(data["time_words"]) if data["time_words"] else "Немає"}</div>
+        <div class="line"><strong>Дієслова дії:</strong> {", ".join(data["action_verbs"]) if data["action_verbs"] else "Немає"}</div>
+    </div>
+
+    <div class="card">
+        <div class="small-title">Перевірка структури</div>
+        <ul>
+            <li>Джерело: {data["structure"]["source"]}</li>
+            <li>Дата: {data["structure"]["date"]}</li>
+            <li>Контекст: {data["structure"]["context"]}</li>
+            <li>Докази: {data["structure"]["evidence"]}</li>
+            <li>Твердження: {data["structure"]["claim"]}</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <div class="small-title">Карта невідомого</div>
+        <div class="line"><strong>Відсутні елементи:</strong> {", ".join(data["missing"]) if data["missing"] else "Немає"}</div>
+        <div class="line"><strong>Критичні прогалини:</strong> {", ".join(data["critical_unknowns"]) if data["critical_unknowns"] else "Немає"}</div>
+    </div>
+
+    <div class="card">
+        <div class="small-title">Причини оцінки</div>
+        <ul>
+            {"".join(f"<li>{item}</li>" for item in data["reasons"])} 
+        </ul>
+    </div>
+    """
+
+    return render_page(result_html=result_html, text_value=text)
 
 
 # Vercel looks for `app`
