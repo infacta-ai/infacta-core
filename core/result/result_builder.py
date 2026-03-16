@@ -5,10 +5,12 @@ def build_result(state: dict) -> dict:
     missing_elements_raw = state.get("missing_elements_raw", [])
     risks = state.get("risks", [])
     questions = state.get("questions", [])
+    contract_type = state.get("contract_type", "generic")
 
     missing_elements = [f"Не виявлено: {item}" for item in missing_elements_raw]
 
     notes = [
+        f"Тип договору: {contract_type}",
         f"Покриття структури: {structure_score}%",
         f"Знайдено елементів: {len(found_elements)} із {len(found_elements) + len(missing_elements_raw)}",
     ]
@@ -23,8 +25,8 @@ def build_result(state: dict) -> dict:
         structure_status = "структура виглядає дуже неповною"
 
     summary = (
-        f"Базовий аналіз завершено. Покриття структури: "
-        f"{structure_score}%. Загалом {structure_status}."
+        f"Базовий аналіз завершено. Тип: {contract_type}. "
+        f"Покриття структури: {structure_score}%. Загалом {structure_status}."
     )
 
     simplified_text = processed_text[:500] if processed_text else "Текст відсутній."
@@ -38,4 +40,5 @@ def build_result(state: dict) -> dict:
         "notes": notes,
         "structure_score": structure_score,
         "found_elements": found_elements,
+        "contract_type": contract_type,
     }
