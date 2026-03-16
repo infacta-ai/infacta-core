@@ -18,124 +18,236 @@ HTML_TEMPLATE = """
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Інфакта</title>
     <style>
+        :root {
+            --bg: #f7f8fb;
+            --card: #ffffff;
+            --border: #e5e7eb;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --soft: #eef2ff;
+            --soft-border: #c7d2fe;
+            --ok-bg: #ecfeff;
+            --ok-border: #a5f3fc;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background: #f7f8fb;
-            color: #1f2937;
             margin: 0;
-            padding: 0;
+            font-family: Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
         }
+
         .container {
-            max-width: 920px;
-            margin: 40px auto;
-            padding: 24px;
+            max-width: 980px;
+            margin: 18px auto 36px auto;
+            padding: 12px;
         }
+
         .card {
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 14px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+            margin-bottom: 16px;
         }
+
+        .hero {
+            padding: 16px 18px;
+        }
+
         h1 {
-            margin: 0 0 8px 0;
-            font-size: 42px;
-            color: #4f46e5;
+            margin: 0 0 4px 0;
+            font-size: 28px;
+            line-height: 1.1;
+            color: var(--primary);
         }
+
         .subtitle {
-            margin: 0 0 18px 0;
-            color: #6b7280;
-            font-size: 16px;
+            margin: 0 0 12px 0;
+            color: var(--muted);
+            font-size: 15px;
         }
+
         .modes {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
-            margin-bottom: 18px;
+            margin-bottom: 12px;
         }
+
         .mode {
-            background: #eef2ff;
+            background: var(--soft);
             color: #3730a3;
-            border: 1px solid #c7d2fe;
-            padding: 8px 12px;
+            border: 1px solid var(--soft-border);
+            padding: 7px 11px;
             border-radius: 999px;
-            font-size: 14px;
-            font-weight: 600;
+            font-size: 13px;
+            font-weight: 700;
         }
+
+        .focus-box {
+            background: #fafafa;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        .focus-box strong {
+            display: block;
+            margin-bottom: 6px;
+        }
+
         label {
             display: block;
-            font-size: 18px;
+            font-size: 19px;
             font-weight: 700;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
+
         textarea {
             width: 100%;
-            min-height: 220px;
+            min-height: 160px;
             padding: 14px;
-            border-radius: 10px;
+            border-radius: 12px;
             border: 1px solid #d1d5db;
             font-size: 15px;
             line-height: 1.5;
             resize: vertical;
-            box-sizing: border-box;
+            background: #fff;
         }
+
+        .hint {
+            margin-top: 8px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .action-row {
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
         button {
-            margin-top: 14px;
-            background: #4f46e5;
+            background: var(--primary);
             color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             padding: 12px 18px;
             font-size: 15px;
             font-weight: 700;
             cursor: pointer;
         }
+
         button:hover {
-            background: #4338ca;
+            background: var(--primary-hover);
         }
+
+        .cta-note {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .result-hint {
+            background: var(--ok-bg);
+            border: 1px solid var(--ok-border);
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 14px;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
         h2 {
-            margin-top: 0;
-            font-size: 22px;
-            color: #111827;
+            margin: 0 0 14px 0;
+            font-size: 24px;
         }
+
         h3 {
-            margin-bottom: 10px;
+            margin: 0 0 8px 0;
+            font-size: 18px;
             color: #374151;
         }
+
         .block {
-            margin-bottom: 18px;
+            margin-bottom: 16px;
         }
+
         .plain-box {
             background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
             padding: 14px;
             white-space: pre-wrap;
             line-height: 1.55;
         }
+
         ul {
             margin: 0;
             padding-left: 20px;
         }
+
         li {
-            margin-bottom: 8px;
+            margin-bottom: 7px;
             line-height: 1.45;
         }
+
         .empty {
-            color: #6b7280;
+            color: var(--muted);
             font-style: italic;
         }
-        .hint {
-            color: #6b7280;
-            font-size: 14px;
-            margin-top: 6px;
+
+        .top-anchor {
+            position: relative;
+            top: -10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin-top: 10px;
+                padding: 10px;
+            }
+
+            .card {
+                padding: 14px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            textarea {
+                min-height: 140px;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .action-row {
+                align-items: stretch;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="card">
+        <div class="card hero">
             <h1>Інфакта</h1>
             <p class="subtitle">Аналіз документів і договорів на основі структури</p>
 
@@ -145,27 +257,40 @@ HTML_TEMPLATE = """
                 <div class="mode">Check Information</div>
             </div>
 
-            <div class="plain-box">
-<strong>Поточний фокус Core 0.11:</strong>
-1. Сканування структури
-2. Виявлення відсутніх елементів
-3. Пошук базових ризиків
-4. Генерація уточнюючих питань
-5. Спрощене пояснення тексту
+            <div class="focus-box">
+                <strong>Поточний фокус Core 0.11:</strong>
+                1. Сканування структури<br>
+                2. Виявлення відсутніх елементів<br>
+                3. Пошук базових ризиків<br>
+                4. Генерація уточнюючих питань<br>
+                5. Спрощене пояснення тексту
             </div>
         </div>
 
-        <div class="card">
+        <div class="card" id="analyze-form">
             <form method="post">
                 <label for="text">Вставте текст документа або договору</label>
                 <textarea id="text" name="text" placeholder="Вставте тут текст для аналізу...">{{ text }}</textarea>
-                <div class="hint">На цьому етапі система працює як document/contract-first MVP.</div>
-                <button type="submit">Аналізувати</button>
+
+                <div class="hint">
+                    На цьому етапі система працює як document/contract-first MVP.
+                </div>
+
+                <div class="action-row">
+                    <button type="submit">Аналізувати</button>
+                    <div class="cta-note">Головна дія доступна одразу на першому екрані.</div>
+                </div>
             </form>
         </div>
 
         {% if analysis %}
-        <div class="card">
+        <div class="top-anchor" id="result-anchor"></div>
+
+        <div class="result-hint">
+            Результат готовий ↓ Прокрутіть нижче або перегляньте блок результату нижче на цій сторінці.
+        </div>
+
+        <div class="card" id="result-block">
             <h2>Результат аналізу</h2>
 
             <div class="block">
@@ -234,6 +359,15 @@ HTML_TEMPLATE = """
                 {% endif %}
             </div>
         </div>
+
+        <script>
+            window.addEventListener("load", function () {
+                const resultBlock = document.getElementById("result-anchor");
+                if (resultBlock) {
+                    resultBlock.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
+            });
+        </script>
         {% endif %}
     </div>
 </body>
@@ -251,7 +385,6 @@ def home():
 
         if text:
             raw_result = run_core(text, mode="document")
-
             analysis = {
                 "summary": raw_result.get("summary", ""),
                 "simplified_text": raw_result.get("simplified_text", ""),
@@ -273,6 +406,5 @@ def health():
     return {"status": "ok", "service": "infacta-core"}
 
 
-# Для локального запуску
 if __name__ == "__main__":
     app.run(debug=True)
