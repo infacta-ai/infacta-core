@@ -2,12 +2,15 @@ from core.module_registry import ACTIVE_MODULES
 from core.result.result_builder import build_result
 
 
-def run_core(text, mode="document"):
+def run_core(text: str, mode: str = "document") -> dict:
     state = {
         "text": text,
         "mode": mode,
-        "processed_text": text,
-        "structure_data": {},
+        "processed_text": "",
+        "structure": {},
+        "found_elements": [],
+        "missing_elements_raw": [],
+        "structure_score": 0,
         "risks": [],
         "questions": [],
     }
@@ -15,12 +18,7 @@ def run_core(text, mode="document"):
     for module in ACTIVE_MODULES:
         state = module(state)
 
-    return build_result(
-        text=state["processed_text"],
-        structure_data=state["structure_data"],
-        risks=state["risks"],
-        questions=state["questions"],
-    )
+    return build_result(state)
 
 
 if __name__ == "__main__":
@@ -28,5 +26,4 @@ if __name__ == "__main__":
         "Service agreement between Company A and Company B. "
         "Payment 5000 USD. Penalty for delay."
     )
-    analysis = run_core(test_text, mode="document")
-    print(analysis)
+    print(run_core(test_text))
