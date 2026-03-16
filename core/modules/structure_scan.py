@@ -1,75 +1,26 @@
+from core.frames.contract_frame_v1 import CONTRACT_FRAME_V1
+from core.contract_types.type_detector import detect_contract_type
+
+
+def _check_keywords(text: str, keywords: list) -> bool:
+    text_lower = text.lower()
+    return any(keyword in text_lower for keyword in keywords)
+
+
 def scan_structure(state: dict) -> dict:
     text = state.get("processed_text", "")
     text_lower = text.lower()
 
-    structure = {
-        "parties": False,
-        "payment_terms": False,
-        "duration": False,
-        "liability": False,
-        "termination": False,
-        "date": False,
-        "signature": False,
-    }
+    contract_type = detect_contract_type(text)
+    frame = CONTRACT_FRAME_V1["generic"]
 
-    if (
-        "сторони" in text_lower
-        or "parties" in text_lower
-        or "company" in text_lower
-        or "agreement between" in text_lower
-        or "contract between" in text_lower
-    ):
-        structure["parties"] = True
+    structure = {}
 
-    if (
-        "оплата" in text_lower
-        or "payment" in text_lower
-        or "usd" in text_lower
-        or "eur" in text_lower
-        or "uah" in text_lower
-        or "$" in text
-        or "price" in text_lower
-        or "cost" in text_lower
-    ):
-        structure["payment_terms"] = True
-
-    if (
-        "строк" in text_lower
-        or "term" in text_lower
-        or "duration" in text_lower
-        or "period" in text_lower
-        or "deadline" in text_lower
-        or "until" in text_lower
-    ):
-        structure["duration"] = True
-
-    if (
-        "відповідальність" in text_lower
-        or "liability" in text_lower
-        or "penalty" in text_lower
-        or "штраф" in text_lower
-        or "fine" in text_lower
-    ):
-        structure["liability"] = True
-
-    if (
-        "розірвання" in text_lower
-        or "termination" in text_lower
-        or "terminate" in text_lower
-        or "cancel" in text_lower
-    ):
-        structure["termination"] = True
-
-    if any(ch.isdigit() for ch in text):
-        structure["date"] = True
-
-    if (
-        "підпис" in text_lower
-        or "signature" in text_lower
-        or "signed" in text_lower
-        or "signatory" in text_lower
-    ):
-        structure["signature"] = True
+    for field, keywords in frame.items():
+        if field == "date":
+            structure[field] = any(ch.isdigit() for ch in text)
+        else:
+            structure[field] = _check_keywords(text, keywords)
 
     found_elements = [key for key, value in structure.items() if value]
     missing_elements = [key for key, value in structure.items() if not value]
@@ -77,6 +28,7 @@ def scan_structure(state: dict) -> dict:
     total = len(structure)
     score = round((len(found_elements) / total) * 100) if total else 0
 
+    state["contract_type"] = contract_type
     state["structure"] = structure
     state["found_elements"] = found_elements
     state["missing_elements_raw"] = missing_elements
