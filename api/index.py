@@ -1,12 +1,12 @@
 from flask import Flask, request, render_template_string
 
 try:
-    from core.core_engine import run_core
+    from core.analyzer import analyze
 except ImportError:
     import os
     import sys
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-    from core.core_engine import run_core
+    from core.analyzer import analyze
 
 app = Flask(__name__)
 
@@ -26,10 +26,10 @@ HTML_TEMPLATE = """
             --muted: #6b7280;
             --primary: #4f46e5;
             --primary-hover: #4338ca;
-            --soft: #eef2ff;
-            --soft-border: #c7d2fe;
-            --ok-bg: #ecfeff;
-            --ok-border: #a5f3fc;
+            --secondary-bg: #eef2ff;
+            --secondary-border: #c7d2fe;
+            --hint-bg: #ecfeff;
+            --hint-border: #a5f3fc;
         }
 
         * {
@@ -87,9 +87,9 @@ HTML_TEMPLATE = """
         }
 
         .mode {
-            background: var(--soft);
+            background: var(--secondary-bg);
             color: #3730a3;
-            border: 1px solid var(--soft-border);
+            border: 1px solid var(--secondary-border);
             padding: 7px 11px;
             border-radius: 999px;
             font-size: 13px;
@@ -119,7 +119,7 @@ HTML_TEMPLATE = """
 
         textarea {
             width: 100%;
-            min-height: 160px;
+            min-height: 170px;
             padding: 14px;
             border-radius: 12px;
             border: 1px solid #d1d5db;
@@ -136,7 +136,7 @@ HTML_TEMPLATE = """
         }
 
         .action-row {
-            margin-top: 12px;
+            margin-top: 14px;
             display: flex;
             align-items: center;
             gap: 12px;
@@ -144,8 +144,6 @@ HTML_TEMPLATE = """
         }
 
         button {
-            background: var(--primary);
-            color: white;
             border: none;
             border-radius: 12px;
             padding: 12px 18px;
@@ -154,8 +152,23 @@ HTML_TEMPLATE = """
             cursor: pointer;
         }
 
-        button:hover {
+        .primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .primary:hover {
             background: var(--primary-hover);
+        }
+
+        .secondary {
+            background: var(--secondary-bg);
+            color: #3730a3;
+            border: 1px solid var(--secondary-border);
+        }
+
+        .secondary:hover {
+            background: #e0e7ff;
         }
 
         .cta-note {
@@ -164,8 +177,8 @@ HTML_TEMPLATE = """
         }
 
         .result-hint {
-            background: var(--ok-bg);
-            border: 1px solid var(--ok-border);
+            background: var(--hint-bg);
+            border: 1px solid var(--hint-border);
             border-radius: 12px;
             padding: 12px 14px;
             margin-bottom: 14px;
@@ -235,12 +248,12 @@ HTML_TEMPLATE = """
                 min-height: 140px;
             }
 
-            button {
-                width: 100%;
-            }
-
             .action-row {
                 align-items: stretch;
+            }
+
+            button {
+                width: 100%;
             }
         }
     </style>
@@ -268,7 +281,7 @@ HTML_TEMPLATE = """
         </div>
 
         <div class="card" id="analyze-form">
-            <form method="post">
+            <form method="post" id="analysisForm" onsubmit="beforeAnalyze()">
                 <label for="text">Вставте текст документа або договору</label>
                 <textarea id="text" name="text" placeholder="Вставте тут текст для аналізу...">{{ text }}</textarea>
 
@@ -277,7 +290,8 @@ HTML_TEMPLATE = """
                 </div>
 
                 <div class="action-row">
-                    <button type="submit">Аналізувати</button>
+                    <button type="submit" class="primary">Аналізувати</button>
+                    <button type="button" class="secondary" onclick="resetAnalysis()">Новий аналіз</button>
                     <div class="cta-note">Головна дія доступна одразу на першому екрані.</div>
                 </div>
             </form>
@@ -359,17 +373,58 @@ HTML_TEMPLATE = """
                 {% endif %}
             </div>
         </div>
-
-        <script>
-            window.addEventListener("load", function () {
-                const resultBlock = document.getElementById("result-anchor");
-                if (resultBlock) {
-                    resultBlock.scrollIntoView({ behavior: "smooth", block: "start" });
-                }
-            });
-        </script>
         {% endif %}
     </div>
+
+    <script>
+        function resetAnalysis() {
+            const textArea = document.getElementById("text");
+            if (textArea) {
+                textArea.value = "";
+            }
+
+            const resultBlock = document.getElementById("result-block");
+            if (resultBlock) {
+                resultBlock.remove();
+            }
+
+            const resultHint = document.querySelector(".result-hint");
+            if (resultHint) {
+                resultHint.remove();
+            }
+
+            const resultAnchor = document.getElementById("result-anchor");
+            if (resultAnchor) {
+                resultAnchor.remove();
+            }
+
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+
+        function beforeAnalyze() {
+            const resultBlock = document.getElementById("result-block");
+            if (resultBlock) {
+                resultBlock.remove();
+            }
+
+            const resultHint = document.querySelector(".result-hint");
+            if (resultHint) {
+                resultHint.remove();
+            }
+
+            const resultAnchor = document.getElementById("result-anchor");
+            if (resultAnchor) {
+                resultAnchor.remove();
+            }
+        }
+
+        window.addEventListener("load", function () {
+            const resultBlock = document.getElementById("result-anchor");
+            if (resultBlock) {
+                resultBlock.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        });
+    </script>
 </body>
 </html>
 """
@@ -384,15 +439,7 @@ def home():
         text = request.form.get("text", "").strip()
 
         if text:
-            raw_result = run_core(text, mode="document")
-            analysis = {
-                "summary": raw_result.get("summary", ""),
-                "simplified_text": raw_result.get("simplified_text", ""),
-                "risks": raw_result.get("risks", []),
-                "missing_elements": raw_result.get("missing_elements", []),
-                "questions": raw_result.get("questions", []),
-                "notes": raw_result.get("notes", []),
-            }
+            analysis = analyze(text, mode="document")
 
     return render_template_string(
         HTML_TEMPLATE,
