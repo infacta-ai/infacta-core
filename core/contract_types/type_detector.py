@@ -1,19 +1,44 @@
 def detect_contract_type(text: str) -> str:
     text_lower = text.lower()
 
-    if any(word in text_lower for word in ["mortgage", "іпотека", "іпотечн"]):
+    if (
+        "іпотек" in text_lower
+        or "mortgage" in text_lower
+        or "іпотекодав" in text_lower
+        or "іпотекодерж" in text_lower
+    ):
         return "mortgage"
 
-    if any(word in text_lower for word in ["lease", "rent", "оренда", "оренд"]):
+    if (
+        "оренда" in text_lower
+        or "lease" in text_lower
+        or "орендодав" in text_lower
+        or "орендар" in text_lower
+    ):
         return "lease"
 
-    if any(word in text_lower for word in ["employment", "employee", "роботодав", "працівник", "трудов"]):
+    if (
+        "employment" in text_lower
+        or "трудов" in text_lower
+        or "працівник" in text_lower
+        or "роботодавець" in text_lower
+    ):
         return "employment"
 
-    if any(word in text_lower for word in ["nda", "non-disclosure", "confidentiality", "конфіденцій"]):
+    if (
+        "nda" in text_lower
+        or "non-disclosure" in text_lower
+        or "confidentiality" in text_lower
+        or "конфіденці" in text_lower
+    ):
         return "nda"
 
-    if any(word in text_lower for word in ["subscription", "saas", "monthly plan", "підписка"]):
+    if (
+        "subscription" in text_lower
+        or "saas" in text_lower
+        or "auto renewal" in text_lower
+        or "renewal" in text_lower
+    ):
         return "subscription"
 
     return "generic"
