@@ -1,73 +1,31 @@
-import json
+from flask import Flask, request, jsonify
 import traceback
 
 from core.analyzer import analyze_text
 
-
-def _json_response(status_code, payload):
-    return {
-        "statusCode": status_code,
-        "headers": {
-            "Content-Type": "application/json; charset=utf-8",
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type",
-        },
-        "body": json.dumps(payload, ensure_ascii=False),
-    }
+app = Flask(__name__)
 
 
-def _extract_body(event):
-    if not event:
-        return {}
-
-    body = event.get("body")
-
-    if body is None:
-        return {}
-
-    if isinstance(body, dict):
-        return body
-
-    if isinstance(body, str):
-        body = body.strip()
-        if not body:
-            return {}
-        try:
-            return json.loads(body)
-        except Exception:
-            return {"text": body}
-
-    return {}
+@app.route("/", methods=["GET"])
+def root():
+    return jsonify({
+        "ok": True,
+        "message": "Infacta API працює"
+    })
 
 
-def handler(event, context):
+@app.route("/api", methods=["GET"])
+def api_root():
+    return jsonify({
+        "ok": True,
+        "message": "Infacta API endpoint ready"
+    })
+
+
+@app.route("/api/analyze", methods=["POST"])
+def api_analyze():
     try:
-        method = (event or {}).get("httpMethod", "GET")
-
-        if method == "OPTIONS":
-            return _json_response(200, {"ok": True})
-
-        if method == "GET":
-            return _json_response(
-                200,
-                {
-                    "ok": True,
-                    "message": "Infacta API працює",
-                    "mode": "contract_analysis",
-                },
-            )
-
-        if method != "POST":
-            return _json_response(
-                405,
-                {
-                    "ok": False,
-                    "error": "Method not allowed. Use POST.",
-                },
-            )
-
-        data = _extract_body(event)
+        data = request.get_json(silent=True) or {}
 
         text = data.get("text", "")
         mode = data.get("mode", "contract_analysis")
@@ -79,21 +37,32 @@ def handler(event, context):
             language=language,
         )
 
-        return _json_response(
-            200,
-            {
-                "ok": True,
-                "result": result,
-            },
-        )
+        return jsonify({
+            "ok": True,
+            "result": result
+        })
 
     except Exception as e:
-        return _json_response(
-            500,
-            {
-                "ok": False,
-                "error": "Internal server error",
-                "details": str(e),
-                "trace": traceback.format_exc(),
-            },
-        )
+        return jsonify({
+            "ok": False,
+            "error": "Internal server error",
+            "details": str(e),
+            "trace": traceback.format_exc()
+        }), 500
+
+
+@app.route("/api/analyze", methods=["OPTIONS"])
+def api_analyze_options():
+    response = jsonify({"ok": True})
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    return response
+
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    return response
