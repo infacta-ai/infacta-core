@@ -1,15 +1,4 @@
 import re
-from typing import Dict, List, Any
-
-
-# =========================================================
-# Core 0.11x - analyzer.py
-# Contract analysis with:
-# 1) legal/non-legal precheck
-# 2) sample template detection
-# 3) friendly fallback for unsupported text
-# 4) simple contract structure scan
-# =========================================================
 
 
 LEGAL_MARKERS = [
@@ -56,15 +45,6 @@ TEMPLATE_MARKERS = [
     "[номер]",
     "_____",
     "________",
-]
-
-PERSONAL_FIELDS = [
-    "ПІБ сторони",
-    "ПІБ позичальника",
-    "Паспортні дані",
-    "Ідентифікаційний код",
-    "Адреса сторони",
-    "Реквізити сторони",
 ]
 
 STRUCTURE_RULES = {
@@ -136,11 +116,7 @@ RISK_RULES = [
     {
         "title": "Штрафи або пеня",
         "level": "medium",
-        "patterns": [
-            "пеня",
-            "штраф",
-            "неустойка",
-        ],
+        "patterns": ["пеня", "штраф", "неустойка"],
         "explanation": "У договорі виявлено штрафні санкції або пеню. Потрібно окремо оцінити розмір і умови застосування.",
     },
     {
@@ -179,16 +155,18 @@ RISK_RULES = [
 ]
 
 
-def normalize_text(text: str) -> str:
-    return re.sub(r"\s+", " ", text.strip().lower())
+def normalize_text(text):
+    if text is None:
+        return ""
+    return re.sub(r"\s+", " ", str(text).strip().lower())
 
 
-def has_many_words(text: str, min_words: int = 20) -> bool:
-    words = re.findall(r"\w+", text, flags=re.UNICODE)
+def has_many_words(text, min_words=20):
+    words = re.findall(r"\w+", str(text), flags=re.UNICODE)
     return len(words) >= min_words
 
 
-def count_legal_markers(text: str) -> Dict[str, Any]:
+def count_legal_markers(text):
     normalized = normalize_text(text)
     found = [marker for marker in LEGAL_MARKERS if marker in normalized]
     return {
@@ -197,7 +175,8 @@ def count_legal_markers(text: str) -> Dict[str, Any]:
     }
 
 
-def has_legal_structure(text: str) -> bool:
+def has_legal_structure(text):
+    text = str(text)
     lowered = text.lower()
 
     numbered_sections = len(re.findall(r"(?:^|\n)\s*\d{1,2}\.\s+", text))
@@ -221,18 +200,11 @@ def has_legal_structure(text: str) -> bool:
     return numbered_sections >= 2 or named_sections >= 2
 
 
-def classify_input_document(text: str) -> str:
-    """
-    Returns:
-    - legal_document
-    - non_legal_text
-    """
-    normalized = normalize_text(text)
-
+def classify_input_document(text):
     if not has_many_words(text):
         return "non_legal_text"
 
-    marker_result = count_legal_markers(normalized)
+    marker_result = count_legal_markers(text)
     marker_count = marker_result["count"]
     structure_flag = has_legal_structure(text)
 
@@ -245,23 +217,23 @@ def classify_input_document(text: str) -> str:
     return "non_legal_text"
 
 
-def detect_document_type(text: str) -> str:
+def detect_document_type(text):
     normalized = normalize_text(text)
 
     for marker in TEMPLATE_MARKERS:
         if marker in normalized:
             return "sample_template"
 
-    if re.search(r"\[[^\]]+\]", text):
+    if re.search(r"\[[^\]]+\]", str(text)):
         return "sample_template"
 
-    if re.search(r"_{4,}", text):
+    if re.search(r"_{4,}", str(text)):
         return "sample_template"
 
     return "filled_contract"
 
 
-def extract_contract_structure(text: str) -> Dict[str, List[str]]:
+def extract_contract_structure(text):
     normalized = normalize_text(text)
 
     detected = []
@@ -285,7 +257,7 @@ def extract_contract_structure(text: str) -> Dict[str, List[str]]:
     }
 
 
-def detect_contract_risks(text: str, structure: Dict[str, List[str]]) -> List[Dict[str, str]]:
+def detect_contract_risks(text, structure):
     normalized = normalize_text(text)
     risks = []
 
@@ -320,7 +292,7 @@ def detect_contract_risks(text: str, structure: Dict[str, List[str]]) -> List[Di
     return risks
 
 
-def build_plain_meaning(text: str, structure: Dict[str, List[str]], risks: List[Dict[str, str]]) -> str:
+def build_plain_meaning(text, structure, risks):
     detected = structure.get("detected", [])
     missing = structure.get("missing_for_analysis", [])
 
@@ -347,7 +319,9 @@ def build_plain_meaning(text: str, structure: Dict[str, List[str]], risks: List[
 
     if risks:
         parts.append(
-            f"Виявлено {len(risks)} потенційних ризиків або зон для додаткової перевірки."
+            "Виявлено "
+            + str(len(risks))
+            + " потенційних ризиків або зон для додаткової перевірки."
         )
     else:
         parts.append(
@@ -357,10 +331,9 @@ def build_plain_meaning(text: str, structure: Dict[str, List[str]], risks: List[
     return " ".join(parts)
 
 
-def build_practical_impact(text: str, structure: Dict[str, List[str]], risks: List[Dict[str, str]]) -> List[Dict[str, str]]:
+def build_practical_impact(text, structure, risks):
     impacts = []
-
-    titles = {risk["title"] for risk in risks}
+    titles = set([risk["title"] for risk in risks])
 
     if "Можлива одностороння зміна умов" in titles:
         impacts.append(
@@ -405,11 +378,11 @@ def build_practical_impact(text: str, structure: Dict[str, List[str]], risks: Li
     return impacts
 
 
-def build_financial_impact(text: str) -> List[Dict[str, str]]:
-    lowered = text.lower()
+def build_financial_impact(text):
+    lowered = str(text).lower()
     impacts = []
 
-    if "%" in text or "процент" in lowered or "ставка" in lowered:
+    if "%" in str(text) or "процент" in lowered or "ставка" in lowered:
         impacts.append(
             {
                 "title": "Процентна ставка / відсотки",
@@ -459,11 +432,7 @@ def build_financial_impact(text: str) -> List[Dict[str, str]]:
     return impacts
 
 
-def remove_personal_fields(items: List[str]) -> List[str]:
-    return [item for item in items if item not in PERSONAL_FIELDS]
-
-
-def generate_questions(structure: Dict[str, List[str]], risks: List[Dict[str, str]], is_supported_document: bool) -> List[str]:
+def generate_questions(structure, risks, is_supported_document):
     if not is_supported_document:
         return []
 
@@ -478,7 +447,7 @@ def generate_questions(structure: Dict[str, List[str]], risks: List[Dict[str, st
     if "Termination" in structure.get("missing_for_analysis", []):
         questions.append("Чи містить договір чіткі умови розірвання або дострокового припинення?")
 
-    risk_titles = {risk["title"] for risk in risks}
+    risk_titles = set([risk["title"] for risk in risks])
 
     if "Страхування як додаткова умова" in risk_titles:
         questions.append("Чи є страхування обов’язковим, і чи можна обрати страхову компанію самостійно?")
@@ -489,7 +458,7 @@ def generate_questions(structure: Dict[str, List[str]], risks: List[Dict[str, st
     return questions
 
 
-def generate_notes(document_type: str, structure: Dict[str, List[str]], is_supported_document: bool) -> List[str]:
+def generate_notes(document_type, structure, is_supported_document):
     if not is_supported_document:
         return [
             "Поточний режим призначений для аналізу договорів та інших юридичних текстів."
@@ -510,7 +479,7 @@ def generate_notes(document_type: str, structure: Dict[str, List[str]], is_suppo
     return notes
 
 
-def calculate_contract_strength(structure: Dict[str, List[str]], risks: List[Dict[str, str]], is_supported_document: bool) -> Dict[str, Any]:
+def calculate_contract_strength(structure, risks, is_supported_document):
     if not is_supported_document:
         return {
             "score": 0,
@@ -540,7 +509,7 @@ def calculate_contract_strength(structure: Dict[str, List[str]], risks: List[Dic
     }
 
 
-def build_non_legal_response() -> Dict[str, Any]:
+def build_non_legal_response():
     return {
         "mode": "contract_analysis",
         "document_type": "non_legal_text",
@@ -575,33 +544,63 @@ def build_non_legal_response() -> Dict[str, Any]:
     }
 
 
-def analyze_contract(text: str, language: str = "uk") -> Dict[str, Any]:
-    """
-    Main contract analyzer for Core 0.11x
-    """
-    if not text or not text.strip():
-        return {
-            "mode": "contract_analysis",
-            "document_type": "unknown",
-            "is_supported_document": False,
-            "message": "Текст для аналізу порожній.",
-            "summary": "Немає вхідного тексту для аналізу.",
-            "simplified_text": "",
-            "structure_coverage": {
-                "detected": [],
-                "missing": [],
-                "unclear": [],
-            },
-            "risks": [],
-            "practical_impact": [],
-            "financial_impact": [],
-            "questions": [],
-            "notes": ["Вставте текст договору або іншого юридичного документа."],
-            "contract_strength_index": {
-                "score": 0,
-                "label": "not_applicable",
-            },
-        }
+def build_empty_response():
+    return {
+        "mode": "contract_analysis",
+        "document_type": "unknown",
+        "is_supported_document": False,
+        "message": "Текст для аналізу порожній.",
+        "summary": "Немає вхідного тексту для аналізу.",
+        "simplified_text": "",
+        "structure_coverage": {
+            "detected": [],
+            "missing": [],
+            "unclear": [],
+        },
+        "risks": [],
+        "practical_impact": [],
+        "financial_impact": [],
+        "questions": [],
+        "notes": ["Вставте текст договору або іншого юридичного документа."],
+        "contract_strength_index": {
+            "score": 0,
+            "label": "not_applicable",
+        },
+    }
+
+
+def _extract_text_from_input(data):
+    if isinstance(data, str):
+        return data
+
+    if isinstance(data, dict):
+        for key in ["text", "input_text", "content", "document_text", "value"]:
+            value = data.get(key)
+            if isinstance(value, str) and value.strip():
+                return value
+
+    return ""
+
+
+def _extract_mode_from_input(data, default_mode="contract_analysis"):
+    if isinstance(data, dict):
+        mode = data.get("mode")
+        if isinstance(mode, str) and mode.strip():
+            return mode
+    return default_mode
+
+
+def _extract_language_from_input(data, default_language="uk"):
+    if isinstance(data, dict):
+        language = data.get("language")
+        if isinstance(language, str) and language.strip():
+            return language
+    return default_language
+
+
+def analyze_contract(text, language="uk"):
+    if not text or not str(text).strip():
+        return build_empty_response()
 
     input_class = classify_input_document(text)
 
@@ -620,9 +619,6 @@ def analyze_contract(text: str, language: str = "uk") -> Dict[str, Any]:
         "missing": structure.get("missing_for_analysis", []),
         "unclear": structure.get("unclear", []),
     }
-
-    if document_type == "sample_template":
-        structure_coverage["missing"] = remove_personal_fields(structure_coverage["missing"])
 
     strength = calculate_contract_strength(
         structure=structure,
@@ -655,33 +651,45 @@ def analyze_contract(text: str, language: str = "uk") -> Dict[str, Any]:
     }
 
 
-def analyze_text(text: str, mode: str = "contract_analysis", language: str = "uk") -> Dict[str, Any]:
-    """
-    Generic entry point.
-    If your API calls analyze_text(...), it will continue to work.
-    """
-    if mode == "contract_analysis":
-        return analyze_contract(text=text, language=language)
+def analyze_text(text=None, mode="contract_analysis", language="uk", data=None):
+    if text is None and data is not None:
+        text = _extract_text_from_input(data)
+        mode = _extract_mode_from_input(data, mode)
+        language = _extract_language_from_input(data, language)
 
-    return {
-        "mode": mode,
-        "document_type": "unknown",
-        "is_supported_document": False,
-        "message": "Поточний режим аналізу ще не реалізований.",
-        "summary": "Цей режим поки недоступний.",
-        "simplified_text": "",
-        "structure_coverage": {
-            "detected": [],
-            "missing": [],
-            "unclear": [],
-        },
-        "risks": [],
-        "practical_impact": [],
-        "financial_impact": [],
-        "questions": [],
-        "notes": ["Підтримується лише contract_analysis."],
-        "contract_strength_index": {
-            "score": 0,
-            "label": "not_applicable",
-        },
-    }
+    if mode != "contract_analysis":
+        return {
+            "mode": mode,
+            "document_type": "unknown",
+            "is_supported_document": False,
+            "message": "Поточний режим аналізу ще не реалізований.",
+            "summary": "Цей режим поки недоступний.",
+            "simplified_text": "",
+            "structure_coverage": {
+                "detected": [],
+                "missing": [],
+                "unclear": [],
+            },
+            "risks": [],
+            "practical_impact": [],
+            "financial_impact": [],
+            "questions": [],
+            "notes": ["Підтримується лише contract_analysis."],
+            "contract_strength_index": {
+                "score": 0,
+                "label": "not_applicable",
+            },
+        }
+
+    return analyze_contract(text=text, language=language)
+
+
+def analyze_document(data):
+    text = _extract_text_from_input(data)
+    mode = _extract_mode_from_input(data, "contract_analysis")
+    language = _extract_language_from_input(data, "uk")
+    return analyze_text(text=text, mode=mode, language=language)
+
+
+def analyze(data):
+    return analyze_document(data)
